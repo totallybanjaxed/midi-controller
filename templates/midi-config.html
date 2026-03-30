@@ -1,26 +1,50 @@
-<form class="midi-config">
-  <div id="mappings">
+<form class="midi-config flexcol">
+  <div id="mappings" class="flexcol">
     {{#each mappings}}
-    <div class="mapping-row">
-      <input class="key" type="text" value="{{this.key}}" placeholder="MIDI Key" />
+    <div class="mapping-row flexrow" style="align-items: center; gap: 5px; margin-bottom: 5px;">
 
+      <!-- Display Key (CC / Note) -->
+      <span class="display-key" style="min-width: 80px;">
+        {{displayKey}}
+      </span>
+
+      <!-- Hidden actual key -->
+      <input class="key" type="hidden" value="{{rawKey}}" />
+
+      <!-- Type -->
       <select class="type">
-        <option value="macro" {{#if (eq this.type "macro")}}selected{{/if}}>Macro</option>
-        <option value="scene" {{#if (eq this.type "scene")}}selected{{/if}}>Scene</option>
-        <option value="roll" {{#if (eq this.type "roll")}}selected{{/if}}>Roll</option>
+        <option value="macro" {{#if (eq type "macro")}}selected{{/if}}>Macro</option>
+        <option value="scene" {{#if (eq type "scene")}}selected{{/if}}>Scene</option>
+        <option value="roll" {{#if (eq type "roll")}}selected{{/if}}>Roll</option>
+        <option value="volume" {{#if (eq type "volume")}}selected{{/if}}>Volume</option>
       </select>
 
-      <input class="value" type="text" value="{{this.value}}" placeholder="Name or Formula" />
+      <!-- Value (Macro/Scene/Roll) -->
+      <input
+        class="value"
+        type="text"
+        placeholder="Name or Formula"
+        value="{{value}}"
+      />
 
+      <!-- Volume Target -->
+      <select class="target">
+        <option value="">-- Volume Target --</option>
+        <option value="master" {{#if (eq target "master")}}selected{{/if}}>Master</option>
+        <option value="music" {{#if (eq target "music")}}selected{{/if}}>Music</option>
+        <option value="ambient" {{#if (eq target "ambient")}}selected{{/if}}>Ambient</option>
+      </select>
+
+      <!-- Learn -->
       <button type="button" class="learn-btn">Learn</button>
+
+      <!-- Delete -->
       <button type="button" class="delete-btn">X</button>
     </div>
     {{/each}}
   </div>
 
-  <hr/>
-
-  <div style="display:flex; gap:10px;">
+  <div class="flexrow" style="margin-top: 10px; gap: 5px;">
     <button type="button" id="add-mapping">Add Mapping</button>
     <button type="button" id="save">Save</button>
   </div>
