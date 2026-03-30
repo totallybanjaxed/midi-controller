@@ -1,9 +1,12 @@
 import { learnState } from "./midi-controller.js";
 
-export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+
+export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: "midi-config",
     tag: "form",
+    classes: ["midi-config"],
     window: {
       title: "MIDI Controller Mapping",
       resizable: true
@@ -32,8 +35,13 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
     };
   }
 
-  activateListeners(html) {
-    super.activateListeners(html);
+  /**
+   * V2 lifecycle: use _onRender instead of activateListeners
+   */
+  _onRender(context, options) {
+    super._onRender(context, options);
+
+    const html = this.element;
 
     // 🎯 Learn buttons
     html.querySelectorAll(".learn-btn").forEach(btn => {
@@ -48,7 +56,7 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
 
     // ➕ Add row
     html.querySelector("#add-mapping")?.addEventListener("click", () => {
-      this._appendRow(html);
+      this._appendRow();
     });
 
     // ❌ Delete row
@@ -60,7 +68,7 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
 
     // 💾 Save
     html.querySelector("#save")?.addEventListener("click", () => {
-      this._save(html);
+      this._save();
     });
   }
 
@@ -72,8 +80,8 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
     });
   }
 
-  _appendRow(html) {
-    const container = html.querySelector("#mappings");
+  _appendRow() {
+    const container = this.element.querySelector("#mappings");
 
     const div = document.createElement("div");
     div.classList.add("mapping-row");
@@ -95,12 +103,12 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
 
     container.appendChild(div);
 
-    // Re-bind listeners for new buttons
-    this.activateListeners(html);
+    // Re-bind listeners
+    this._onRender();
   }
 
-  async _save(html) {
-    const rows = html.querySelectorAll(".mapping-row");
+  async _save() {
+    const rows = this.element.querySelectorAll(".mapping-row");
     const mappings = {};
 
     rows.forEach(row => {
