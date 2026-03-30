@@ -6,6 +6,8 @@
   "minimumCoreVersion": "13",
   "compatibleCoreVersion": "13",
   "esmodules": ["scripts/midi-controller.js", "scripts/config-app.js"],
+  "manifest": "https://your-domain-or-github/midi-controller/module.json",
+  "download": "https://your-domain-or-github/midi-controller.zip",
   "styles": [],
   "scripts": []
 }
