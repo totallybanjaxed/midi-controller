@@ -130,31 +130,36 @@ export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
   // SAVE
   // --------------------
   async _save() {
-    const rows = this.element.querySelectorAll(".mapping-row");
-    const mappings = {};
+    // const rows = this.element.querySelectorAll(".mapping-row");
+    // const mappings = {};
 
     rows.forEach(row => {
-      const key = row.querySelector(".key").value;
-      const type = row.querySelector(".type").value;
-      const value = row.querySelector(".value").value.trim();
-      const target = row.querySelector(".target").value;
-
+      const keyEl = row.querySelector(".key");
+      const typeEl = row.querySelector(".type");
+      const valueEl = row.querySelector(".value");
+      const targetEl = row.querySelector(".target");
+    
+      const key = keyEl?.value;
+      const type = typeEl?.value;
+      const value = valueEl?.value?.trim() ?? "";
+      const target = targetEl?.value;
+    
       if (!key) return;
-
-      // Volume mapping
+    
+      // 🎛 Volume mapping
       if (type === "volume") {
         if (!target) return;
-
+    
         mappings[key] = {
           type: "volume",
           target
         };
         return;
       }
-
-      // Other mappings
+    
+      // 🎯 Other mappings
       if (!value) return;
-
+    
       mappings[key] = {
         type,
         ...(type === "roll"
