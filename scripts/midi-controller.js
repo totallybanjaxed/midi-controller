@@ -1,6 +1,10 @@
 import { MidiConfigApp } from "./config-app.js";
 
-// 🎯 Learn mode shared state
+const { AudioHelper } = foundry.audio;
+
+// --------------------
+// Learn mode state
+// --------------------
 export let learnState = {
   active: false,
   resolve: null
@@ -38,7 +42,7 @@ Hooks.once("ready", async () => {
   console.log("MIDI Controller | Ready");
 
   if (!navigator.requestMIDIAccess) {
-    ui.notifications.error("Web MIDI API not supported in this browser.");
+    ui.notifications.error("Web MIDI API not supported.");
     return;
   }
 
@@ -46,7 +50,7 @@ Hooks.once("ready", async () => {
     midiAccess = await navigator.requestMIDIAccess();
     initializeMIDI();
   } catch (err) {
-    console.error("MIDI Controller | MIDI access failed", err);
+    console.error("MIDI access failed", err);
   }
 });
 
@@ -60,8 +64,6 @@ function initializeMIDI() {
   }
 
   midiAccess.onstatechange = (event) => {
-    console.log(`MIDI ${event.port.state}: ${event.port.name}`);
-
     if (event.port.type === "input" && event.port.state === "connected") {
       event.port.onmidimessage = handleMIDIMessage;
     }
@@ -73,14 +75,35 @@ function initializeMIDI() {
 // --------------------
 async function handleMIDIMessage(event) {
   const [status, data1, data2] = event.data;
-  const key = `${status}-${data1}`;
 
-  // 🎯 Learn mode
+  const command = status & 0xf0;
+
+  let key;
+
+  // 🎛 CC (knobs / sliders)
+  if (command === 0xb0) {
+    key = `cc-${data1}`;
+  }
+  // 🎹 Note
+  else if (command === 0x90) {
+    key = `note-${data1}`;
+  } else {
+    return;
+  }
+
+  // --------------------
+  // LEARN MODE
+  // --------------------
   if (learnState.active && learnState.resolve) {
-    learnState.resolve(key);
+    learnState.resolve({
+      key,
+      type: command === 0xb0 ? "cc" : "note"
+    });
+
     learnState.active = false;
     learnState.resolve = null;
-    ui.notifications.info(`Captured MIDI input: ${key}`);
+
+    ui.notifications.info(`Captured ${key}`);
     return;
   }
 
@@ -88,8 +111,9 @@ async function handleMIDIMessage(event) {
   const action = mappings[key];
   if (!action) return;
 
-  console.log("MIDI Trigger:", key, action);
-
+  // --------------------
+  // EXECUTE ACTION
+  // --------------------
   switch (action.type) {
     case "macro":
       return triggerMacro(action.name);
@@ -99,6 +123,51 @@ async function handleMIDIMessage(event) {
 
     case "roll":
       return rollDice(action.formula);
+
+    case "volume":
+      return handleVolume(action.target, data2);
+  }
+}
+
+// --------------------
+// VOLUME HANDLING (V13)
+// --------------------
+const debouncedVolume = foundry.utils.debounce(_setVolume, 50);
+
+function handleVolume(target, midiValue) {
+  debouncedVolume(target, midiValue);
+}
+
+async function _setVolume(target, midiValue) {
+  const normalized = midiValue / 127;
+  const volume = AudioHelper.inputToVolume(normalized);
+
+  switch (target) {
+    case "master":
+      await game.settings.set("core", "globalVolume", normalized);
+
+      for (const sound of game.audio.sounds) {
+        sound.gain.value = volume;
+      }
+      break;
+
+    case "music":
+      await game.settings.set("core", "playlistVolume", normalized);
+
+      for (const playlist of game.playlists) {
+        for (const s of playlist.sounds) {
+          s.debounceVolume(volume);
+        }
+      }
+      break;
+
+    case "ambient":
+      await game.settings.set("core", "ambientVolume", normalized);
+
+      canvas.sounds?.placeables.forEach(s => {
+        s.document.update({ volume });
+      });
+      break;
   }
 }
 
@@ -107,19 +176,13 @@ async function handleMIDIMessage(event) {
 // --------------------
 function triggerMacro(name) {
   const macro = game.macros.getName(name);
-  if (!macro) {
-    ui.notifications.warn(`Macro not found: ${name}`);
-    return;
-  }
+  if (!macro) return ui.notifications.warn(`Macro not found: ${name}`);
   macro.execute();
 }
 
 async function activateScene(name) {
   const scene = game.scenes.getName(name);
-  if (!scene) {
-    ui.notifications.warn(`Scene not found: ${name}`);
-    return;
-  }
+  if (!scene) return ui.notifications.warn(`Scene not found: ${name}`);
   await scene.activate();
 }
 
@@ -128,9 +191,9 @@ async function rollDice(formula) {
     const roll = await new Roll(formula).evaluate();
     roll.toMessage({
       speaker: ChatMessage.getSpeaker(),
-      flavor: "🎹 MIDI Roll"
+      flavor: "MIDI Roll"
     });
-  } catch (err) {
+  } catch {
     ui.notifications.error(`Invalid roll: ${formula}`);
   }
 }
