@@ -130,8 +130,8 @@ export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
   // SAVE
   // --------------------
   async _save() {
-    // const rows = this.element.querySelectorAll(".mapping-row");
-    // const mappings = {};
+    const rows = this.element.querySelectorAll(".mapping-row");
+    const mappings = {};
 
     rows.forEach(row => {
       const keyEl = row.querySelector(".key");
