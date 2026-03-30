@@ -1,14 +1,14 @@
 {
   "id": "midi-controller",
   "title": "MIDI Controller Integration",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "authors": [{ "name": "TotallyBanjaxed" }],
   "minimumCoreVersion": "13",
   "compatibleCoreVersion": "13",
   "esmodules": ["scripts/midi-controller.js", "scripts/config-app.js"],
   "url": "https://github.com/totallybanjaxed/midi-controller",
   "manifest": "https://raw.githubusercontent.com/totallybanjaxed/midi-controller/main/module.json",
-  "download": "https://github.com/totallybanjaxed/midi-controller/archive/refs/tags/v0.2.3.zip",
+  "download": "https://github.com/totallybanjaxed/midi-controller/archive/refs/tags/v0.2.4.zip",
   "license": "MIT",
   "styles": [],
   "scripts": []
