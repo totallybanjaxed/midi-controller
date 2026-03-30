@@ -1,0 +1,27 @@
+<form class="midi-config">
+  <div id="mappings">
+    {{#each mappings}}
+    <div class="mapping-row">
+      <input class="key" type="text" value="{{this.key}}" placeholder="MIDI Key" />
+
+      <select class="type">
+        <option value="macro" {{#if (eq this.type "macro")}}selected{{/if}}>Macro</option>
+        <option value="scene" {{#if (eq this.type "scene")}}selected{{/if}}>Scene</option>
+        <option value="roll" {{#if (eq this.type "roll")}}selected{{/if}}>Roll</option>
+      </select>
+
+      <input class="value" type="text" value="{{this.value}}" placeholder="Name or Formula" />
+
+      <button type="button" class="learn-btn">Learn</button>
+      <button type="button" class="delete-btn">X</button>
+    </div>
+    {{/each}}
+  </div>
+
+  <hr/>
+
+  <div style="display:flex; gap:10px;">
+    <button type="button" id="add-mapping">Add Mapping</button>
+    <button type="button" id="save">Save</button>
+  </div>
+</form>

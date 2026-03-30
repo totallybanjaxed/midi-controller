@@ -1,0 +1,11 @@
+{
+  "id": "midi-controller",
+  "title": "MIDI Controller Integration",
+  "version": "0.2.0",
+  "authors": [{ "name": "TotallyBanjaxed" }],
+  "minimumCoreVersion": "13",
+  "compatibleCoreVersion": "13",
+  "esmodules": ["scripts/midi-controller.js", "scripts/config-app.js"],
+  "styles": [],
+  "scripts": []
+}
