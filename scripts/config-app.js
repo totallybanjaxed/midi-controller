@@ -12,7 +12,7 @@ export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
       resizable: true
     },
     position: {
-      width: 600,
+      width: 650,
       height: "auto"
     }
   };
@@ -27,48 +27,58 @@ export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const mappings = game.settings.get("midi-controller", "mappings");
 
     return {
-      mappings: Object.entries(mappings).map(([key, val]) => ({
-        key,
-        type: val.type,
-        value: val.name ?? val.formula ?? ""
-      }))
+      mappings: Object.entries(mappings).map(([key, val]) => {
+        const [control, number] = key.split("-");
+
+        return {
+          rawKey: key,
+          displayKey: control === "cc" ? `CC ${number}` : `Note ${number}`,
+          type: val.type,
+          target: val.target ?? "",
+          value: val.name ?? val.formula ?? ""
+        };
+      })
     };
   }
 
-  /**
-   * V2 lifecycle: use _onRender instead of activateListeners
-   */
+  // --------------------
+  // RENDER / EVENTS
+  // --------------------
   _onRender(context, options) {
     super._onRender(context, options);
 
     const html = this.element;
 
-    // 🎯 Learn buttons
-    html.querySelectorAll(".learn-btn").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        const row = e.currentTarget.closest(".mapping-row");
+    // 🎯 Event delegation (clean + no rebinding issues)
+    html.addEventListener("click", async (e) => {
+      // LEARN
+      if (e.target.matches(".learn-btn")) {
+        const row = e.target.closest(".mapping-row");
         const keyInput = row.querySelector(".key");
 
-        const key = await this._learnMidi();
-        keyInput.value = key;
-      });
-    });
+        const result = await this._learnMidi();
 
-    // ➕ Add row
-    html.querySelector("#add-mapping")?.addEventListener("click", () => {
-      this._appendRow();
-    });
+        keyInput.value = result.key;
+        row.querySelector(".display-key").textContent =
+          result.type === "cc"
+            ? `CC ${result.key.split("-")[1]}`
+            : `Note ${result.key.split("-")[1]}`;
+      }
 
-    // ❌ Delete row
-    html.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.currentTarget.closest(".mapping-row").remove();
-      });
-    });
+      // ADD ROW
+      if (e.target.matches("#add-mapping")) {
+        this._appendRow();
+      }
 
-    // 💾 Save
-    html.querySelector("#save")?.addEventListener("click", () => {
-      this._save();
+      // DELETE
+      if (e.target.matches(".delete-btn")) {
+        e.target.closest(".mapping-row").remove();
+      }
+
+      // SAVE
+      if (e.target.matches("#save")) {
+        this._save();
+      }
     });
   }
 
@@ -76,10 +86,13 @@ export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
     return new Promise(resolve => {
       learnState.active = true;
       learnState.resolve = resolve;
-      ui.notifications.info("Waiting for MIDI input...");
+      ui.notifications.info("Move a knob or press a key...");
     });
   }
 
+  // --------------------
+  // UI BUILDING
+  // --------------------
   _appendRow() {
     const container = this.element.querySelector("#mappings");
 
@@ -87,36 +100,60 @@ export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
     div.classList.add("mapping-row");
 
     div.innerHTML = `
-      <input class="key" type="text" placeholder="MIDI Key" />
+      <span class="display-key">Unassigned</span>
+      <input class="key" type="hidden" />
 
       <select class="type">
         <option value="macro">Macro</option>
         <option value="scene">Scene</option>
         <option value="roll">Roll</option>
+        <option value="volume">Volume</option>
       </select>
 
       <input class="value" type="text" placeholder="Name or Formula" />
+
+      <select class="target">
+        <option value="">-- Volume Target --</option>
+        <option value="master">Master</option>
+        <option value="music">Music</option>
+        <option value="ambient">Ambient</option>
+      </select>
 
       <button type="button" class="learn-btn">Learn</button>
       <button type="button" class="delete-btn">X</button>
     `;
 
     container.appendChild(div);
-
-    // Re-bind listeners
-    this._onRender();
   }
 
+  // --------------------
+  // SAVE
+  // --------------------
   async _save() {
     const rows = this.element.querySelectorAll(".mapping-row");
     const mappings = {};
 
     rows.forEach(row => {
-      const key = row.querySelector(".key").value.trim();
+      const key = row.querySelector(".key").value;
       const type = row.querySelector(".type").value;
       const value = row.querySelector(".value").value.trim();
+      const target = row.querySelector(".target").value;
 
-      if (!key || !value) return;
+      if (!key) return;
+
+      // Volume mapping
+      if (type === "volume") {
+        if (!target) return;
+
+        mappings[key] = {
+          type: "volume",
+          target
+        };
+        return;
+      }
+
+      // Other mappings
+      if (!value) return;
 
       mappings[key] = {
         type,
