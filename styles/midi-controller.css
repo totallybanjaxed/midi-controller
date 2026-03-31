@@ -1,29 +1,12 @@
-.mapping-table {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+#midi-settings-btn {
+  margin-top: 10px;
+  padding: 5px 10px;
+  background-color: #4a4a4a;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 
-.mapping-row {
-  display: grid;
-  grid-template-columns: 140px 90px 1fr 140px 40px 40px;
-  gap: 6px;
-  align-items: center;
-}
-
-.value-wrapper,
-.volume-wrapper {
-  width: 100%;
-}
-
-.volume-wrapper {
-  display: none;
-}
-
-.value-wrapper input {
-  width: 100%;
-}
-
-.volume-target {
-  width: 100%;
+#midi-settings-btn:hover {
+  background-color: #6a6a6a;
 }
