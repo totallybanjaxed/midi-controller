@@ -1,12 +1,53 @@
-#midi-settings-btn {
-  margin-top: 10px;
-  padding: 5px 10px;
-  background-color: #4a4a4a;
-  color: white;
-  border: none;
-  cursor: pointer;
+.midi-config {
+  font-size: 13px;
 }
 
-#midi-settings-btn:hover {
-  background-color: #6a6a6a;
+.mapping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapping-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.mapping-row input,
+.mapping-row select {
+  height: 28px;
+  font-size: 13px;
+}
+
+.key {
+  width: 130px;
+}
+
+.type {
+  width: 90px;
+}
+
+.field {
+  display: flex;
+}
+
+.field select,
+.field input {
+  width: 160px;
+}
+
+button.learn-btn {
+  width: 32px;
+}
+
+button.delete-btn {
+  width: 32px;
+}
+
+.controls {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
 }
