@@ -1,18 +1,15 @@
 import { learnState } from "./midi-controller.js";
 
-const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
-
-export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
+export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
   static DEFAULT_OPTIONS = {
     id: "midi-config",
     tag: "form",
-    classes: ["midi-config"],
     window: {
       title: "MIDI Controller Mapping",
       resizable: true
     },
     position: {
-      width: 650,
+      width: 720,
       height: "auto"
     }
   };
@@ -23,149 +20,155 @@ export class MidiConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   };
 
+  /* -------------------------------------------- */
+
   async _prepareContext() {
     const mappings = game.settings.get("midi-controller", "mappings");
 
     return {
-      mappings: Object.entries(mappings).map(([key, val]) => {
-        const [control, number] = key.split("-");
-
-        return {
-          rawKey: key,
-          displayKey: control === "cc" ? `CC ${number}` : `Note ${number}`,
-          type: val.type,
-          target: val.target ?? "",
-          value: val.name ?? val.formula ?? ""
-        };
-      })
+      mappings: Object.entries(mappings).map(([key, val]) => ({
+        key,
+        type: val.type,
+        value: val.name ?? val.formula ?? "",
+        target: val.target ?? "master"
+      })),
+      macros: game.macros.contents.map(m => m.name),
+      scenes: game.scenes.contents.map(s => s.name)
     };
   }
 
-  // --------------------
-  // RENDER / EVENTS
-  // --------------------
-  _onRender(context, options) {
-    super._onRender(context, options);
+  /* -------------------------------------------- */
 
-    const html = this.element;
+  activateListeners(html) {
+    super.activateListeners(html);
 
-    // 🎯 Event delegation (clean + no rebinding issues)
-    html.addEventListener("click", async (e) => {
-      // LEARN
-      if (e.target.matches(".learn-btn")) {
-        const row = e.target.closest(".mapping-row");
-        const keyInput = row.querySelector(".key");
+    html.addEventListener("change", (e) => {
+      const row = e.target.closest(".mapping-row");
+      if (!row) return;
 
-        const result = await this._learnMidi();
-
-        keyInput.value = result.key;
-        row.querySelector(".display-key").textContent =
-          result.type === "cc"
-            ? `CC ${result.key.split("-")[1]}`
-            : `Note ${result.key.split("-")[1]}`;
-      }
-
-      // ADD ROW
-      if (e.target.matches("#add-mapping")) {
-        this._appendRow();
-      }
-
-      // DELETE
-      if (e.target.matches(".delete-btn")) {
-        e.target.closest(".mapping-row").remove();
-      }
-
-      // SAVE
-      if (e.target.matches("#save")) {
-        this._save();
+      if (e.target.classList.contains("type")) {
+        this._updateRowUI(row);
       }
     });
+
+    html.addEventListener("click", async (e) => {
+      const row = e.target.closest(".mapping-row");
+
+      if (e.target.classList.contains("learn-btn")) {
+        const keyInput = row.querySelector(".key");
+        const result = await this._learnMidi();
+        keyInput.value = result.key;
+      }
+
+      if (e.target.classList.contains("delete-btn")) {
+        row.remove();
+      }
+
+      if (e.target.id === "add-mapping") {
+        this._appendRow(html);
+      }
+
+      if (e.target.id === "save") {
+        this._save(html);
+      }
+    });
+
+    // Initial pass
+    html.querySelectorAll(".mapping-row").forEach(row => {
+      this._updateRowUI(row);
+    });
   }
+
+  /* -------------------------------------------- */
+
+  _updateRowUI(row) {
+    const type = row.querySelector(".type")?.value;
+
+    const macro = row.querySelector(".macro-select");
+    const scene = row.querySelector(".scene-select");
+    const roll = row.querySelector(".roll-input");
+    const volume = row.querySelector(".volume-target");
+
+    [macro, scene, roll, volume].forEach(el => {
+      if (el) el.closest(".field").style.display = "none";
+    });
+
+    switch (type) {
+      case "macro":
+        macro.closest(".field").style.display = "flex";
+        break;
+
+      case "scene":
+        scene.closest(".field").style.display = "flex";
+        break;
+
+      case "roll":
+        roll.closest(".field").style.display = "flex";
+        break;
+
+      case "volume":
+        volume.closest(".field").style.display = "flex";
+        break;
+    }
+  }
+
+  /* -------------------------------------------- */
 
   async _learnMidi() {
     return new Promise(resolve => {
       learnState.active = true;
       learnState.resolve = resolve;
-      ui.notifications.info("Move a knob or press a key...");
+      ui.notifications.info("Waiting for MIDI input...");
     });
   }
 
-  // --------------------
-  // UI BUILDING
-  // --------------------
-  _appendRow() {
-    const container = this.element.querySelector("#mappings");
+  /* -------------------------------------------- */
+
+  _appendRow(html) {
+    const container = html.querySelector("#mappings");
 
     const div = document.createElement("div");
     div.classList.add("mapping-row");
 
-    div.innerHTML = `
-      <span class="display-key">Unassigned</span>
-      <input class="key" type="hidden" />
-
-      <select class="type">
-        <option value="macro">Macro</option>
-        <option value="scene">Scene</option>
-        <option value="roll">Roll</option>
-        <option value="volume">Volume</option>
-      </select>
-
-      <input class="value" type="text" placeholder="Name or Formula" />
-
-      <select class="target">
-        <option value="">-- Volume Target --</option>
-        <option value="master">Master</option>
-        <option value="music">Music</option>
-        <option value="ambient">Ambient</option>
-      </select>
-
-      <button type="button" class="learn-btn">Learn</button>
-      <button type="button" class="delete-btn">X</button>
-    `;
+    div.innerHTML = html.querySelector("#row-template").innerHTML;
 
     container.appendChild(div);
+    this._updateRowUI(div);
   }
 
-  // --------------------
-  // SAVE
-  // --------------------
-  async _save() {
-    const rows = this.element.querySelectorAll(".mapping-row");
+  /* -------------------------------------------- */
+
+  async _save(html) {
+    const rows = html.querySelectorAll(".mapping-row");
     const mappings = {};
 
     rows.forEach(row => {
-      const keyEl = row.querySelector(".key");
-      const typeEl = row.querySelector(".type");
-      const valueEl = row.querySelector(".value");
-      const targetEl = row.querySelector(".target");
-    
-      const key = keyEl?.value;
-      const type = typeEl?.value;
-      const value = valueEl?.value?.trim() ?? "";
-      const target = targetEl?.value;
-    
-      if (!key) return;
-    
-      // 🎛 Volume mapping
-      if (type === "volume") {
-        if (!target) return;
-    
-        mappings[key] = {
-          type: "volume",
-          target
-        };
-        return;
+      const key = row.querySelector(".key")?.value?.trim();
+      const type = row.querySelector(".type")?.value;
+
+      if (!key || !type) return;
+
+      let data = { type };
+
+      switch (type) {
+        case "macro":
+          data.name = row.querySelector(".macro-select")?.value;
+          break;
+
+        case "scene":
+          data.name = row.querySelector(".scene-select")?.value;
+          break;
+
+        case "roll":
+          data.formula = row.querySelector(".roll-input")?.value?.trim();
+          break;
+
+        case "volume":
+          data.target = row.querySelector(".volume-target")?.value;
+          break;
       }
-    
-      // 🎯 Other mappings
-      if (!value) return;
-    
-      mappings[key] = {
-        type,
-        ...(type === "roll"
-          ? { formula: value }
-          : { name: value })
-      };
+
+      mappings[key] = data;
     });
 
     await game.settings.set("midi-controller", "mappings", mappings);
