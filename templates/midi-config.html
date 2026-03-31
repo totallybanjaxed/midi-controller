@@ -1,51 +1,93 @@
-<form class="midi-config flexcol">
-  <div id="mappings" class="flexcol">
+<form class="midi-config">
+
+  <div id="mappings" class="mapping-list">
     {{#each mappings}}
-    <div class="mapping-row flexrow" style="align-items: center; gap: 5px; margin-bottom: 5px;">
+      <div class="mapping-row">
 
-      <!-- Display Key (CC / Note) -->
-      <span class="display-key" style="min-width: 80px;">
-        {{displayKey}}
-      </span>
+        <input class="key" type="text" value="{{this.key}}" placeholder="cc-1 / note-60"/>
 
-      <!-- Hidden actual key -->
-      <input class="key" type="hidden" value="{{rawKey}}" />
+        <select class="type">
+          <option value="macro" {{#if (eq this.type "macro")}}selected{{/if}}>Macro</option>
+          <option value="scene" {{#if (eq this.type "scene")}}selected{{/if}}>Scene</option>
+          <option value="roll" {{#if (eq this.type "roll")}}selected{{/if}}>Roll</option>
+          <option value="volume" {{#if (eq this.type "volume")}}selected{{/if}}>Volume</option>
+        </select>
 
-      <!-- Type -->
-      <select class="type">
-        <option value="macro" {{#if (eq type "macro")}}selected{{/if}}>Macro</option>
-        <option value="scene" {{#if (eq type "scene")}}selected{{/if}}>Scene</option>
-        <option value="roll" {{#if (eq type "roll")}}selected{{/if}}>Roll</option>
-        <option value="volume" {{#if (eq type "volume")}}selected{{/if}}>Volume</option>
-      </select>
+        <div class="field">
+          <select class="macro-select">
+            {{#each ../macros}}
+              <option value="{{this}}">{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
 
-      <!-- Value (Macro/Scene/Roll) -->
-      <input
-        class="value"
-        type="text"
-        placeholder="Name or Formula"
-        value="{{value}}"
-      />
+        <div class="field">
+          <select class="scene-select">
+            {{#each ../scenes}}
+              <option value="{{this}}">{{this}}</option>
+            {{/each}}
+          </select>
+        </div>
 
-      <!-- Volume Target -->
-      <select class="target">
-        <option value="">-- Volume Target --</option>
-        <option value="master" {{#if (eq target "master")}}selected{{/if}}>Master</option>
-        <option value="music" {{#if (eq target "music")}}selected{{/if}}>Music</option>
-        <option value="ambient" {{#if (eq target "ambient")}}selected{{/if}}>Ambient</option>
-      </select>
+        <div class="field">
+          <input class="roll-input" type="text" value="{{this.value}}" placeholder="1d20+5"/>
+        </div>
 
-      <!-- Learn -->
-      <button type="button" class="learn-btn">Learn</button>
+        <div class="field">
+          <select class="volume-target">
+            <option value="master">Master</option>
+            <option value="music">Music</option>
+            <option value="ambient">Ambient</option>
+          </select>
+        </div>
 
-      <!-- Delete -->
-      <button type="button" class="delete-btn">X</button>
-    </div>
+        <button type="button" class="learn-btn">🎯</button>
+        <button type="button" class="delete-btn">✕</button>
+
+      </div>
     {{/each}}
   </div>
 
-  <div class="flexrow" style="margin-top: 10px; gap: 5px;">
-    <button type="button" id="add-mapping">Add Mapping</button>
-    <button type="button" id="save">Save</button>
+  <!-- Template for new rows -->
+  <template id="row-template">
+    <div class="mapping-row">
+      <input class="key" type="text" placeholder="cc-1 / note-60"/>
+
+      <select class="type">
+        <option value="macro">Macro</option>
+        <option value="scene">Scene</option>
+        <option value="roll">Roll</option>
+        <option value="volume">Volume</option>
+      </select>
+
+      <div class="field">
+        <select class="macro-select"></select>
+      </div>
+
+      <div class="field">
+        <select class="scene-select"></select>
+      </div>
+
+      <div class="field">
+        <input class="roll-input" type="text" placeholder="1d20+5"/>
+      </div>
+
+      <div class="field">
+        <select class="volume-target">
+          <option value="master">Master</option>
+          <option value="music">Music</option>
+          <option value="ambient">Ambient</option>
+        </select>
+      </div>
+
+      <button type="button" class="learn-btn">🎯</button>
+      <button type="button" class="delete-btn">✕</button>
+    </div>
+  </template>
+
+  <div class="controls">
+    <button type="button" id="add-mapping">+ Add Mapping</button>
+    <button type="button" id="save">💾 Save</button>
   </div>
+
 </form>
