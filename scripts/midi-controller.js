@@ -140,20 +140,17 @@ function handleVolume(target, midiValue) {
 
 async function _setVolume(target, midiValue) {
   const normalized = midiValue / 127;
-  const volume = AudioHelper.inputToVolume(normalized);
+  const volume = foundry.audio.AudioHelper.inputToVolume(normalized);
 
   switch (target) {
     case "master":
-      await game.settings.set("core", "globalVolume", normalized);
-
+      // Apply to all active sounds
       for (const sound of game.audio.sounds) {
         sound.gain.value = volume;
       }
       break;
 
     case "music":
-      await game.settings.set("core", "playlistVolume", normalized);
-
       for (const playlist of game.playlists) {
         for (const s of playlist.sounds) {
           s.debounceVolume(volume);
@@ -162,15 +159,12 @@ async function _setVolume(target, midiValue) {
       break;
 
     case "ambient":
-      await game.settings.set("core", "ambientVolume", normalized);
-
       canvas.sounds?.placeables.forEach(s => {
-        s.document.update({ volume });
+        s.document.update({ volume: normalized });
       });
       break;
   }
 }
-
 // --------------------
 // ACTIONS
 // --------------------
