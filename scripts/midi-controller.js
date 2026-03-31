@@ -36,13 +36,14 @@ function showVolumeOverlay(label, normalized) {
       color: "#fff",
       fontSize: "18px",
       borderRadius: "8px",
-      zIndex: 10000,
+      zIndex: 99999,
       pointerEvents: "none",
       opacity: "0",
       transition: "opacity 0.2s ease"
     });
 
-    document.body.appendChild(volumeOverlay);
+    document.querySelector("#ui-top")?.appendChild(volumeOverlay) 
+  ?? document.body.appendChild(volumeOverlay);
   }
 
   volumeOverlay.textContent = `${label}: ${percent}%`;
@@ -226,7 +227,8 @@ function handleVolume(key, target, midiValue) {
 async function _setVolume(key, target, midiValue) {
   const normalized = midiValue / 127;
   const volume = AudioHelper.inputToVolume(normalized);
-
+  console.log("Overlay trigger", target, normalized);
+  
   let label = "";
 
   switch (target) {
