@@ -13,11 +13,92 @@ export let learnState = {
 let midiAccess = null;
 
 // --------------------
-// INIT + SETTINGS
+// Volume overlay
+// --------------------
+let volumeOverlay;
+let overlayTimeout;
+
+function showVolumeOverlay(label, normalized) {
+  const percent = Math.round(normalized * 100);
+
+  if (!volumeOverlay) {
+    volumeOverlay = document.createElement("div");
+    volumeOverlay.id = "midi-volume-overlay";
+
+    Object.assign(volumeOverlay.style, {
+      position: "fixed",
+      left: "50%",
+      bottom: "30px",
+      transform: "translateX(-50%)",
+      padding: "10px 16px",
+      background: "rgba(20,20,20,0.9)",
+      border: "1px solid #666",
+      color: "#fff",
+      fontSize: "18px",
+      borderRadius: "8px",
+      zIndex: 10000,
+      pointerEvents: "none",
+      opacity: "0",
+      transition: "opacity 0.2s ease"
+    });
+
+    document.body.appendChild(volumeOverlay);
+  }
+
+  volumeOverlay.textContent = `${label}: ${percent}%`;
+  volumeOverlay.style.opacity = "1";
+
+  clearTimeout(overlayTimeout);
+  overlayTimeout = setTimeout(() => {
+    volumeOverlay.style.opacity = "0";
+  }, 800);
+}
+
+// --------------------
+// Soft Takeover State
+// --------------------
+const pickupState = {}; // { "cc-7": { active: false, lastValue: 0 } }
+const PICKUP_THRESHOLD = 0.05; // ~5%
+
+function checkPickup(key, normalized) {
+  if (!pickupState[key]) {
+    pickupState[key] = { active: false };
+  }
+
+  const state = pickupState[key];
+
+  // First movement after mapping: require pickup
+  if (!state.active) {
+    const current = getCurrentVolumeEstimate();
+
+    if (Math.abs(normalized - current) <= PICKUP_THRESHOLD) {
+      state.active = true;
+    } else {
+      return false; // ignore until knob "catches"
+    }
+  }
+
+  return true;
+}
+
+// Rough estimate of current volume (best-effort)
+function getCurrentVolumeEstimate() {
+  const sounds = game.audio.sounds;
+  if (!sounds.length) return 0;
+
+  // Average gain → convert back to approx normalized
+  const avgGain =
+    sounds.reduce((sum, s) => sum + (s.gain?.value ?? 0), 0) /
+    sounds.length;
+
+  // Inverse of inputToVolume is not exposed, so approximate
+  return Math.min(Math.max(avgGain, 0), 1);
+}
+
+// --------------------
+// INIT
 // --------------------
 Hooks.once("init", () => {
-  console.log("MIDI Controller | Init");
-
   game.settings.register("midi-controller", "mappings", {
     scope: "world",
     config: false,
@@ -36,11 +117,9 @@ Hooks.once("init", () => {
 });
 
 // --------------------
-// READY → INIT MIDI
+// READY → MIDI INIT
 // --------------------
 Hooks.once("ready", async () => {
-  console.log("MIDI Controller | Ready");
-
   if (!navigator.requestMIDIAccess) {
     ui.notifications.error("Web MIDI API not supported.");
     return;
@@ -75,18 +154,20 @@ function initializeMIDI() {
 // --------------------
 async function handleMIDIMessage(event) {
   const [status, data1, data2] = event.data;
-
   const command = status & 0xf0;
 
   let key;
+  let controlType;
 
-  // 🎛 CC (knobs / sliders)
+  // 🎛 CC (knobs)
   if (command === 0xb0) {
     key = `cc-${data1}`;
+    controlType = "cc";
   }
-  // 🎹 Note
-  else if (command === 0x90) {
+  // 🎹 Note (buttons)
+  else if (command === 0x90 && data2 > 0) {
     key = `note-${data1}`;
+    controlType = "note";
   } else {
     return;
   }
@@ -97,7 +178,7 @@ async function handleMIDIMessage(event) {
   if (learnState.active && learnState.resolve) {
     learnState.resolve({
       key,
-      type: command === 0xb0 ? "cc" : "note"
+      type: controlType
     });
 
     learnState.active = false;
@@ -125,33 +206,40 @@ async function handleMIDIMessage(event) {
       return rollDice(action.formula);
 
     case "volume":
-      return handleVolume(action.target, data2);
+      // 🎯 Soft takeover check
+      const normalized = data2 / 127;
+      if (!checkPickup(key, normalized)) return;
+
+      return handleVolume(key, action.target, data2);
   }
 }
 
 // --------------------
-// VOLUME HANDLING (V13)
+// VOLUME (V13 SAFE)
 // --------------------
 const debouncedVolume = foundry.utils.debounce(_setVolume, 50);
 
-function handleVolume(target, midiValue) {
-  debouncedVolume(target, midiValue);
+function handleVolume(key, target, midiValue) {
+  debouncedVolume(key, target, midiValue);
 }
 
-async function _setVolume(target, midiValue) {
+async function _setVolume(key, target, midiValue) {
   const normalized = midiValue / 127;
-  const volume = foundry.audio.AudioHelper.inputToVolume(normalized);
+  const volume = AudioHelper.inputToVolume(normalized);
+
+  let label = "";
 
   switch (target) {
     case "master":
-      // Apply to all active sounds
+      label = "Master";
       for (const sound of game.audio.sounds) {
         sound.gain.value = volume;
       }
       break;
 
     case "music":
-      for (const playlist of game.playlists) {
+      label = "Music";
+      for (const playlist of game.playlists.contents) {
         for (const s of playlist.sounds) {
           s.debounceVolume(volume);
         }
@@ -159,12 +247,16 @@ async function _setVolume(target, midiValue) {
       break;
 
     case "ambient":
+      label = "Ambient";
       canvas.sounds?.placeables.forEach(s => {
         s.document.update({ volume: normalized });
       });
       break;
   }
+
+  showVolumeOverlay(label, normalized);
 }
+
 // --------------------
 // ACTIONS
 // --------------------
