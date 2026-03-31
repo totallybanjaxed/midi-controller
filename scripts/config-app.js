@@ -9,7 +9,7 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
       resizable: true
     },
     position: {
-      width: 720,
+      width: 650,
       height: "auto"
     }
   };
@@ -19,8 +19,6 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
       template: "modules/midi-controller/templates/midi-config.html"
     }
   };
-
-  /* -------------------------------------------- */
 
   async _prepareContext() {
     const mappings = game.settings.get("midi-controller", "mappings");
@@ -42,73 +40,67 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
   activateListeners(html) {
     super.activateListeners(html);
 
-    html.addEventListener("change", (e) => {
-      const row = e.target.closest(".mapping-row");
-      if (!row) return;
-
-      if (e.target.classList.contains("type")) {
-        this._updateRowUI(row);
-      }
-    });
-
-    html.addEventListener("click", async (e) => {
-      const row = e.target.closest(".mapping-row");
-
-      if (e.target.classList.contains("learn-btn")) {
+    // 🎯 Learn
+    html.querySelectorAll(".learn-btn").forEach(btn => {
+      btn.onclick = async (e) => {
+        const row = e.currentTarget.closest(".mapping-row");
         const keyInput = row.querySelector(".key");
+
         const result = await this._learnMidi();
         keyInput.value = result.key;
-      }
-
-      if (e.target.classList.contains("delete-btn")) {
-        row.remove();
-      }
-
-      if (e.target.id === "add-mapping") {
-        this._appendRow(html);
-      }
-
-      if (e.target.id === "save") {
-        this._save(html);
-      }
+      };
     });
 
-    // Initial pass
-    html.querySelectorAll(".mapping-row").forEach(row => {
-      this._updateRowUI(row);
+    // 🔄 Type change
+    html.querySelectorAll(".type").forEach(select => {
+      select.onchange = (e) => {
+        const row = e.currentTarget.closest(".mapping-row");
+        this._updateRow(row);
+      };
+
+      this._updateRow(select.closest(".mapping-row"));
     });
+
+    // ➕ Add
+    html.querySelector("#add-mapping")?.onclick = () => {
+      this._appendRow(html);
+    };
+
+    // ❌ Delete
+    html.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.onclick = (e) => {
+        e.currentTarget.closest(".mapping-row").remove();
+      };
+    });
+
+    // 💾 Save
+    html.querySelector("#save")?.onclick = () => {
+      this._save(html);
+    };
   }
 
   /* -------------------------------------------- */
 
-  _updateRowUI(row) {
-    const type = row.querySelector(".type")?.value;
+  _updateRow(row) {
+    const type = row.querySelector(".type").value;
 
-    const macro = row.querySelector(".macro-select");
-    const scene = row.querySelector(".scene-select");
-    const roll = row.querySelector(".roll-input");
-    const volume = row.querySelector(".volume-target");
+    const value = row.querySelector(".value-wrapper");
+    const volume = row.querySelector(".volume-wrapper");
 
-    [macro, scene, roll, volume].forEach(el => {
-      if (el) el.closest(".field").style.display = "none";
-    });
+    // Hide everything first
+    value.style.display = "none";
+    volume.style.display = "none";
 
-    switch (type) {
-      case "macro":
-        macro.closest(".field").style.display = "flex";
-        break;
+    if (type === "volume") {
+      volume.style.display = "inline-block";
+    } else {
+      value.style.display = "inline-block";
 
-      case "scene":
-        scene.closest(".field").style.display = "flex";
-        break;
+      const input = row.querySelector(".value");
 
-      case "roll":
-        roll.closest(".field").style.display = "flex";
-        break;
-
-      case "volume":
-        volume.closest(".field").style.display = "flex";
-        break;
+      if (type === "macro") input.placeholder = "Macro name";
+      if (type === "scene") input.placeholder = "Scene name";
+      if (type === "roll") input.placeholder = "1d20+5";
     }
   }
 
@@ -130,10 +122,36 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
     const div = document.createElement("div");
     div.classList.add("mapping-row");
 
-    div.innerHTML = html.querySelector("#row-template").innerHTML;
+    div.innerHTML = `
+      <input class="key" type="text" placeholder="cc-1 / note-60"/>
+
+      <select class="type">
+        <option value="macro">Macro</option>
+        <option value="scene">Scene</option>
+        <option value="roll">Roll</option>
+        <option value="volume">Volume</option>
+      </select>
+
+      <div class="value-wrapper">
+        <input class="value" type="text"/>
+      </div>
+
+      <div class="volume-wrapper">
+        <select class="volume-target">
+          <option value="master">Master</option>
+          <option value="music">Music</option>
+          <option value="ambient">Ambient</option>
+        </select>
+      </div>
+
+      <button type="button" class="learn-btn">🎯</button>
+      <button type="button" class="delete-btn">✕</button>
+    `;
 
     container.appendChild(div);
-    this._updateRowUI(div);
+
+    this.activateListeners(html);
+    this._updateRow(div);
   }
 
   /* -------------------------------------------- */
@@ -146,29 +164,24 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
       const key = row.querySelector(".key")?.value?.trim();
       const type = row.querySelector(".type")?.value;
 
-      if (!key || !type) return;
+      if (!key) return;
 
-      let data = { type };
+      if (type === "volume") {
+        mappings[key] = {
+          type,
+          target: row.querySelector(".volume-target")?.value
+        };
+      } else {
+        const value = row.querySelector(".value")?.value?.trim();
+        if (!value) return;
 
-      switch (type) {
-        case "macro":
-          data.name = row.querySelector(".macro-select")?.value;
-          break;
-
-        case "scene":
-          data.name = row.querySelector(".scene-select")?.value;
-          break;
-
-        case "roll":
-          data.formula = row.querySelector(".roll-input")?.value?.trim();
-          break;
-
-        case "volume":
-          data.target = row.querySelector(".volume-target")?.value;
-          break;
+        mappings[key] = {
+          type,
+          ...(type === "roll"
+            ? { formula: value }
+            : { name: value })
+        };
       }
-
-      mappings[key] = data;
     });
 
     await game.settings.set("midi-controller", "mappings", mappings);
