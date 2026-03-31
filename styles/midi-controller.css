@@ -1,53 +1,29 @@
-.midi-config {
-  font-size: 13px;
-}
-
-.mapping-list {
+.mapping-table {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .mapping-row {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 140px 90px 1fr 140px 40px 40px;
   gap: 6px;
-  padding: 4px 0;
+  align-items: center;
 }
 
-.mapping-row input,
-.mapping-row select {
-  height: 28px;
-  font-size: 13px;
+.value-wrapper,
+.volume-wrapper {
+  width: 100%;
 }
 
-.key {
-  width: 130px;
+.volume-wrapper {
+  display: none;
 }
 
-.type {
-  width: 90px;
+.value-wrapper input {
+  width: 100%;
 }
 
-.field {
-  display: flex;
-}
-
-.field select,
-.field input {
-  width: 160px;
-}
-
-button.learn-btn {
-  width: 32px;
-}
-
-button.delete-btn {
-  width: 32px;
-}
-
-.controls {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
+.volume-target {
+  width: 100%;
 }
