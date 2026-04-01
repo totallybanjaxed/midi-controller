@@ -1,12 +1,40 @@
-#midi-settings-btn {
-  margin-top: 10px;
-  padding: 5px 10px;
-  background-color: #4a4a4a;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
+<form class="midi-config">
 
-#midi-settings-btn:hover {
-  background-color: #6a6a6a;
-}
+  <div id="mappings" class="mapping-table">
+    {{#each mappings}}
+      <div class="mapping-row">
+
+        <input class="key" type="text" value="{{this.key}}" />
+
+        <select class="type">
+          <option value="macro" {{#if (eq this.type "macro")}}selected{{/if}}>Macro</option>
+          <option value="scene" {{#if (eq this.type "scene")}}selected{{/if}}>Scene</option>
+          <option value="roll" {{#if (eq this.type "roll")}}selected{{/if}}>Roll</option>
+          <option value="volume" {{#if (eq this.type "volume")}}selected{{/if}}>Volume</option>
+        </select>
+
+        <div class="value-wrapper">
+          <input class="value" type="text" value="{{this.value}}" />
+        </div>
+
+        <div class="volume-wrapper">
+          <select class="volume-target">
+            <option value="master" {{#if (eq this.target "master")}}selected{{/if}}>Master</option>
+            <option value="music" {{#if (eq this.target "music")}}selected{{/if}}>Music</option>
+            <option value="ambient" {{#if (eq this.target "ambient")}}selected{{/if}}>Ambient</option>
+          </select>
+        </div>
+
+        <button type="button" class="learn-btn">🎯</button>
+        <button type="button" class="delete-btn">✕</button>
+
+      </div>
+    {{/each}}
+  </div>
+
+  <div class="controls">
+    <button type="button" id="add-mapping">+ Add Mapping</button>
+    <button type="button" id="save">💾 Save</button>
+  </div>
+
+</form>
