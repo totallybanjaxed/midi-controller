@@ -3,8 +3,7 @@
   <div id="mappings" class="mapping-table">
     {{#each mappings}}
       <div class="mapping-row">
-
-        <input class="key" type="text" value="{{this.key}}" />
+        <input class="key" type="text" placeholder="cc-1 / note-60" value="{{this.key}}" />
 
         <select class="type">
           <option value="macro" {{#if (eq this.type "macro")}}selected{{/if}}>Macro</option>
@@ -27,7 +26,6 @@
 
         <button type="button" class="learn-btn">🎯</button>
         <button type="button" class="delete-btn">✕</button>
-
       </div>
     {{/each}}
   </div>
