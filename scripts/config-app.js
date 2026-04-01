@@ -77,9 +77,12 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
     });
 
     // 💾 Save
-    html.querySelector("#save")?.onclick = () => {
-      this._save(html);
-    };
+    const saveBtn = html.querySelector("#save");
+    if (saveBtn) {
+      saveBtn.onclick = () => {
+        this._save(html);
+      };
+    }
   }
 
   /* -------------------------------------------- */
