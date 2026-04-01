@@ -40,6 +40,14 @@
   display: none;
 }
 
+.mapping-row .volume-wrapper.hidden {
+  display: none;
+}
+
+.mapping-row .value-wrapper.hidden {
+  display: none;
+}
+
 .mapping-row .volume-wrapper select {
   width: 100%;
 }

@@ -93,14 +93,12 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     const value = row.querySelector(".value-wrapper");
     const volume = row.querySelector(".volume-wrapper");
 
-    // Hide everything first
-    value.style.display = "none";
-    volume.style.display = "none";
-
     if (type === "volume") {
-      volume.style.display = "inline-block";
+      value.classList.add("hidden");
+      volume.classList.remove("hidden");
     } else {
-      value.style.display = "inline-block";
+      value.classList.remove("hidden");
+      volume.classList.add("hidden");
 
       const input = row.querySelector(".value");
 
