@@ -1,6 +1,6 @@
 import { learnState } from "./midi-controller.js";
 
-export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
+export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: "midi-config",
     tag: "form",
