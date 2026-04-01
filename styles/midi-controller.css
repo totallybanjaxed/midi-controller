@@ -37,7 +37,6 @@
 
 .mapping-row .volume-wrapper {
   grid-column: 3;
-  display: none;
 }
 
 .mapping-row .volume-wrapper.hidden {
@@ -69,14 +68,14 @@
   background-color: rgba(220, 53, 69, 0.6);
 }
 
-.controls {
+.midi-config .controls {
   display: flex;
   gap: 0.5rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.controls button {
+.midi-config .controls button {
   padding: 0.5rem 1rem;
   cursor: pointer;
 }
@@ -89,7 +88,8 @@
   flex: 0 0 auto;
 }
 
-input, select {
+.midi-config input,
+.midi-config select {
   background-color: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: inherit;
@@ -99,13 +99,14 @@ input, select {
   font-size: inherit;
 }
 
-input:focus, select:focus {
+.midi-config input:focus,
+.midi-config select:focus {
   outline: none;
   border-color: rgba(255, 255, 255, 0.5);
   background-color: rgba(0, 0, 0, 0.7);
 }
 
-button {
+.midi-config button {
   background-color: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: inherit;
@@ -113,6 +114,6 @@ button {
   font-family: inherit;
 }
 
-button:hover {
+.midi-config button:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }

@@ -43,6 +43,7 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     // 🎯 Learn
     html.querySelectorAll(".learn-btn").forEach(btn => {
       btn.onclick = async (e) => {
+        e.preventDefault();
         const row = e.currentTarget.closest(".mapping-row");
         const keyInput = row.querySelector(".key");
 
@@ -64,7 +65,8 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     // ➕ Add
     const addBtn = html.querySelector("#add-mapping");
     if (addBtn) {
-      addBtn.onclick = () => {
+      addBtn.onclick = (e) => {
+        e.preventDefault();
         this._appendRow(html);
       };
     }
@@ -72,6 +74,7 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     // ❌ Delete
     html.querySelectorAll(".delete-btn").forEach(btn => {
       btn.onclick = (e) => {
+        e.preventDefault();
         e.currentTarget.closest(".mapping-row").remove();
       };
     });
@@ -79,7 +82,8 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     // 💾 Save
     const saveBtn = html.querySelector("#save");
     if (saveBtn) {
-      saveBtn.onclick = () => {
+      saveBtn.onclick = (e) => {
+        e.preventDefault();
         this._save(html);
       };
     }
