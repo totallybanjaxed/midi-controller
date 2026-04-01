@@ -62,9 +62,12 @@ export class MidiConfigApp extends foundry.applications.api.ApplicationV2 {
     });
 
     // ➕ Add
-    html.querySelector("#add-mapping")?.onclick = () => {
-      this._appendRow(html);
-    };
+    const addBtn = html.querySelector("#add-mapping");
+    if (addBtn) {
+      addBtn.onclick = () => {
+        this._appendRow(html);
+      };
+    }
 
     // ❌ Delete
     html.querySelectorAll(".delete-btn").forEach(btn => {
