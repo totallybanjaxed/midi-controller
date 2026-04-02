@@ -220,38 +220,23 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     const json = JSON.stringify(mappings, null, 2);
 
     try {
-      console.log("[MIDI Config] Creating blob with type: application/octet-stream");
-      const blob = new Blob([json], { type: "application/octet-stream" });
-      console.log("[MIDI Config] Blob created, size:", blob.size, "bytes");
+      console.log("[MIDI Config] Creating data URL with proper filename...");
+      const filename = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
 
-      console.log("[MIDI Config] Creating object URL...");
-      const url = URL.createObjectURL(blob);
-      console.log("[MIDI Config] Object URL created:", url);
+      // Use data URL approach for better filename compatibility
+      const dataUrl = "data:application/json;charset=utf-8," + encodeURIComponent(json);
 
       const link = document.createElement("a");
-      console.log("[MIDI Config] Created anchor element");
+      link.setAttribute("href", dataUrl);
+      link.setAttribute("download", filename);
+      link.style.display = "none";
 
-      link.href = url;
-      const filename = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
-      link.download = filename;
-      console.log("[MIDI Config] Set download attribute to:", filename);
-
-      console.log("[MIDI Config] Appending link to document body...");
+      console.log("[MIDI Config] Appending link and triggering download...");
       document.body.appendChild(link);
-
-      console.log("[MIDI Config] Triggering click...");
       link.click();
-      console.log("[MIDI Config] Click triggered");
+      document.body.removeChild(link);
 
-      console.log("[MIDI Config] Scheduling cleanup...");
-      setTimeout(() => {
-        console.log("[MIDI Config] Cleaning up - removing link and revoking URL");
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        console.log("[MIDI Config] Cleanup complete");
-      }, 100);
-
-      console.log("[MIDI Config] Mappings exported successfully");
+      console.log("[MIDI Config] Mappings exported successfully with filename:", filename);
       ui.notifications.info("MIDI mappings exported");
     } catch (err) {
       console.error("[MIDI Config] Export failed:", err);
