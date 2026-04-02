@@ -107,13 +107,22 @@ Hooks.once("init", () => {
   // Track window focus for MIDI command filtering
   window.addEventListener("focus", () => {
     windowFocused = true;
-    console.log("[MIDI] Window gained focus");
+    console.log("[MIDI] Window FOCUSED - focus event fired, windowFocused=", windowFocused);
   });
 
   window.addEventListener("blur", () => {
     windowFocused = false;
-    console.log("[MIDI] Window lost focus");
+    console.log("[MIDI] Window BLURRED - blur event fired, windowFocused=", windowFocused);
   });
+
+  // Initial focus state check
+  if (document.hasFocus()) {
+    windowFocused = true;
+    console.log("[MIDI] Initial state: document has focus, windowFocused=true");
+  } else {
+    windowFocused = false;
+    console.log("[MIDI] Initial state: document does not have focus, windowFocused=false");
+  }
 
   game.settings.register("midi-controller", "mappings", {
     scope: "client",
@@ -311,10 +320,18 @@ function verifyMIDIHandlers() {
 // --------------------
 async function handleMIDIMessage(event) {
   // 🪟 Only process MIDI in the focused window
+  // Check multiple indicators of focus state
+  const hasDocFocus = document.hasFocus();
+  const isVisible = document.visibilityState === "visible";
+
+  console.log(`[MIDI] Focus check - windowFocused=${windowFocused}, document.hasFocus()=${hasDocFocus}, visibilityState=${document.visibilityState}`);
+
   if (!windowFocused) {
-    console.log("[MIDI] Ignoring input - window not focused");
+    console.log("[MIDI] Ignoring input - windowFocused=false");
     return;
   }
+
+  console.log("[MIDI] Processing input - windowFocused=true");
 
   const [status, data1, data2] = event.data;
   const command = status & 0xf0;
