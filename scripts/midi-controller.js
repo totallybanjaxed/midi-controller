@@ -138,13 +138,22 @@ Hooks.once("ready", async () => {
 // MIDI SETUP
 // --------------------
 function initializeMIDI() {
+  if (!midiAccess) {
+    console.warn("[MIDI] midiAccess is null, cannot initialize");
+    return;
+  }
+
+  console.log(`[MIDI] Initializing with ${midiAccess.inputs.size} input(s)`);
+
   for (let input of midiAccess.inputs.values()) {
-    console.log(`MIDI Connected: ${input.name}`);
+    console.log(`[MIDI] Connected: ${input.name}`);
     input.onmidimessage = handleMIDIMessage;
   }
 
   midiAccess.onstatechange = (event) => {
+    console.log(`[MIDI] State change: ${event.port.name} (${event.port.state})`);
     if (event.port.type === "input" && event.port.state === "connected") {
+      console.log(`[MIDI] Re-attaching handler to ${event.port.name}`);
       event.port.onmidimessage = handleMIDIMessage;
     }
   };
@@ -173,10 +182,13 @@ async function handleMIDIMessage(event) {
     return;
   }
 
+  console.log(`[MIDI] Received: ${key}`);
+
   // --------------------
   // LEARN MODE
   // --------------------
   if (learnState.active && learnState.resolve) {
+    console.log(`[MIDI] Learn mode: resolved with ${key}`);
     learnState.resolve({
       key,
       type: controlType
@@ -191,11 +203,13 @@ async function handleMIDIMessage(event) {
 
   const mappings = game.settings.get("midi-controller", "mappings");
   const action = mappings[key];
+  console.log(`[MIDI] Looking up mapping for ${key}:`, action);
   if (!action) return;
 
   // --------------------
   // EXECUTE ACTION
   // --------------------
+  console.log(`[MIDI] Executing action type: ${action.type}`);
   switch (action.type) {
     case "macro":
       return triggerMacro(action.name);
@@ -209,7 +223,10 @@ async function handleMIDIMessage(event) {
     case "volume":
       // 🎯 Soft takeover check
       const normalized = data2 / 127;
-      if (!checkPickup(key, normalized)) return;
+      if (!checkPickup(key, normalized)) {
+        console.log(`[MIDI] Soft takeover: pickup threshold not met`);
+        return;
+      }
 
       return handleVolume(key, action.target, data2);
   }
@@ -263,25 +280,46 @@ async function _setVolume(key, target, midiValue) {
 // ACTIONS
 // --------------------
 function triggerMacro(name) {
-  const macro = game.macros.getName(name);
-  if (!macro) return ui.notifications.warn(`Macro not found: ${name}`);
-  macro.execute();
+  console.log(`[MIDI] Attempting to trigger macro: ${name}`);
+  try {
+    const macro = game.macros.getName(name);
+    if (!macro) {
+      console.error(`[MIDI] Macro not found: ${name}`);
+      return ui.notifications.warn(`Macro not found: ${name}`);
+    }
+    console.log(`[MIDI] Executing macro: ${name}`);
+    macro.execute();
+  } catch (err) {
+    console.error(`[MIDI] Error executing macro ${name}:`, err);
+  }
 }
 
 async function activateScene(name) {
-  const scene = game.scenes.getName(name);
-  if (!scene) return ui.notifications.warn(`Scene not found: ${name}`);
-  await scene.activate();
+  console.log(`[MIDI] Attempting to activate scene: ${name}`);
+  try {
+    const scene = game.scenes.getName(name);
+    if (!scene) {
+      console.error(`[MIDI] Scene not found: ${name}`);
+      return ui.notifications.warn(`Scene not found: ${name}`);
+    }
+    console.log(`[MIDI] Activating scene: ${name}`);
+    await scene.activate();
+  } catch (err) {
+    console.error(`[MIDI] Error activating scene ${name}:`, err);
+  }
 }
 
 async function rollDice(formula) {
+  console.log(`[MIDI] Attempting to roll: ${formula}`);
   try {
     const roll = await new Roll(formula).evaluate();
     roll.toMessage({
       speaker: ChatMessage.getSpeaker(),
       flavor: "MIDI Roll"
     });
-  } catch {
+    console.log(`[MIDI] Roll created successfully`);
+  } catch (err) {
+    console.error(`[MIDI] Error rolling ${formula}:`, err);
     ui.notifications.error(`Invalid roll: ${formula}`);
   }
 }
