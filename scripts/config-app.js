@@ -215,21 +215,22 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
   /* -------------------------------------------- */
 
   _exportMappings() {
+    console.log("[MIDI Config] Exporting mappings...");
     const mappings = game.settings.get("midi-controller", "mappings");
     const json = JSON.stringify(mappings, null, 2);
 
-    // Create and trigger download
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Create download link using data URL
+    const dataUrl = "data:application/json;charset=utf-8," + encodeURIComponent(json);
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
+    link.style.display = "none";
 
-    console.log("[MIDI] Exported mappings to JSON file");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    console.log("[MIDI Config] Mappings exported successfully");
     ui.notifications.info("MIDI mappings exported");
   }
 
