@@ -12,11 +12,11 @@
           <option value="volume" {{#if (eq this.type "volume")}}selected{{/if}}>Volume</option>
         </select>
 
-        <div class="value-wrapper">
+        <div class="value-wrapper {{#if (eq this.type "volume")}}hidden{{/if}}">
           <input class="value" type="text" value="{{this.value}}" />
         </div>
 
-        <div class="volume-wrapper">
+        <div class="volume-wrapper {{#if (not (eq this.type "volume"))}}hidden{{/if}}">
           <select class="volume-target">
             <option value="master" {{#if (eq this.target "master")}}selected{{/if}}>Master</option>
             <option value="music" {{#if (eq this.target "music")}}selected{{/if}}>Music</option>

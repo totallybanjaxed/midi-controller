@@ -42,22 +42,22 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
     // 🎯 Learn
     html.querySelectorAll(".learn-btn").forEach(btn => {
-      btn.onclick = async (e) => {
+      btn.addEventListener("click", async (e) => {
         e.preventDefault();
         const row = e.currentTarget.closest(".mapping-row");
         const keyInput = row.querySelector(".key");
 
         const result = await this._learnMidi();
         keyInput.value = result.key;
-      };
+      });
     });
 
     // 🔄 Type change
     html.querySelectorAll(".type").forEach(select => {
-      select.onchange = (e) => {
+      select.addEventListener("change", (e) => {
         const row = e.currentTarget.closest(".mapping-row");
         this._updateRow(row);
-      };
+      });
 
       this._updateRow(select.closest(".mapping-row"));
     });
@@ -65,27 +65,27 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     // ➕ Add
     const addBtn = html.querySelector("#add-mapping");
     if (addBtn) {
-      addBtn.onclick = (e) => {
+      addBtn.addEventListener("click", (e) => {
         e.preventDefault();
         this._appendRow(html);
-      };
+      });
     }
 
     // ❌ Delete
     html.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.onclick = (e) => {
+      btn.addEventListener("click", (e) => {
         e.preventDefault();
         e.currentTarget.closest(".mapping-row").remove();
-      };
+      });
     });
 
     // 💾 Save
     const saveBtn = html.querySelector("#save");
     if (saveBtn) {
-      saveBtn.onclick = (e) => {
+      saveBtn.addEventListener("click", (e) => {
         e.preventDefault();
         this._save(html);
-      };
+      });
     }
   }
 
