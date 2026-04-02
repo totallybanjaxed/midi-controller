@@ -100,6 +100,7 @@ function getCurrentVolumeEstimate() {
 // INIT
 // --------------------
 Hooks.once("init", () => {
+  console.log("[MIDI] Init hook fired");
   game.settings.register("midi-controller", "mappings", {
     scope: "world",
     config: false,
@@ -117,20 +118,35 @@ Hooks.once("init", () => {
   });
 });
 
+// Verify handlers after all modules have loaded
+Hooks.once("setup", () => {
+  console.log("[MIDI] Setup hook fired, verifying MIDI handlers...");
+  setTimeout(() => {
+    verifyMIDIHandlers();
+  }, 500);
+});
+
 // --------------------
 // READY → MIDI INIT
 // --------------------
 Hooks.once("ready", async () => {
+  console.log("[MIDI] Ready hook fired");
+
   if (!navigator.requestMIDIAccess) {
+    console.error("[MIDI] Web MIDI API not supported");
     ui.notifications.error("Web MIDI API not supported.");
     return;
   }
 
+  console.log("[MIDI] Web MIDI API is available, requesting access...");
+
   try {
     midiAccess = await navigator.requestMIDIAccess();
+    console.log("[MIDI] MIDI Access granted:", midiAccess);
     initializeMIDI();
   } catch (err) {
-    console.error("MIDI access failed", err);
+    console.error("[MIDI] Failed to request MIDI access:", err);
+    ui.notifications.error(`MIDI access failed: ${err.message}`);
   }
 });
 
@@ -150,6 +166,13 @@ function initializeMIDI() {
     input.onmidimessage = handleMIDIMessage;
   }
 
+  // Verify handlers are attached
+  let handlerCount = 0;
+  for (let input of midiAccess.inputs.values()) {
+    if (input.onmidimessage) handlerCount++;
+  }
+  console.log(`[MIDI] Handlers attached to ${handlerCount}/${midiAccess.inputs.size} inputs`);
+
   midiAccess.onstatechange = (event) => {
     console.log(`[MIDI] State change: ${event.port.name} (${event.port.state})`);
     if (event.port.type === "input" && event.port.state === "connected") {
@@ -157,6 +180,29 @@ function initializeMIDI() {
       event.port.onmidimessage = handleMIDIMessage;
     }
   };
+}
+
+// Recovery function in case handlers get lost
+function verifyMIDIHandlers() {
+  if (!midiAccess) {
+    console.warn("[MIDI] midiAccess not initialized");
+    return false;
+  }
+
+  let allAttached = true;
+  for (let input of midiAccess.inputs.values()) {
+    if (!input.onmidimessage) {
+      console.warn(`[MIDI] Handler missing on ${input.name}, re-attaching...`);
+      input.onmidimessage = handleMIDIMessage;
+      allAttached = false;
+    }
+  }
+
+  if (allAttached) {
+    console.log("[MIDI] All handlers verified");
+  }
+
+  return true;
 }
 
 // --------------------
