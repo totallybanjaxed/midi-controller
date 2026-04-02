@@ -11,6 +11,7 @@ export let learnState = {
 };
 
 let midiAccess = null;
+let midiWatchdog = null;
 
 // --------------------
 // Volume overlay
@@ -120,10 +121,8 @@ Hooks.once("init", () => {
 
 // Verify handlers after all modules have loaded
 Hooks.once("setup", () => {
-  console.log("[MIDI] Setup hook fired, verifying MIDI handlers...");
-  setTimeout(() => {
-    verifyMIDIHandlers();
-  }, 500);
+  console.log("[MIDI] Setup hook fired");
+  // Note: waitdog will be started once MIDI is initialized
 });
 
 // --------------------
@@ -214,29 +213,61 @@ function initializeMIDI() {
       event.port.onmidimessage = handleMIDIMessage;
     }
   };
+
+  // Start watchdog to catch devices that appear after initialization
+  startMIDIWatchdog();
 }
 
-// Recovery function in case handlers get lost
+// Watchdog timer to periodically check for new MIDI inputs
+function startMIDIWatchdog() {
+  if (midiWatchdog) {
+    clearInterval(midiWatchdog);
+  }
+
+  let checkCount = 0;
+  midiWatchdog = setInterval(() => {
+    checkCount++;
+    const hasNewDevices = verifyMIDIHandlers();
+
+    // Run frequently for first 60 seconds, then switch to slower polling
+    if (checkCount > 120) {
+      clearInterval(midiWatchdog);
+      // Switch to slower 2-second polling
+      midiWatchdog = setInterval(() => {
+        verifyMIDIHandlers();
+      }, 2000);
+      console.log("[MIDI] Switching to slow polling mode");
+    }
+  }, 500);
+
+  console.log("[MIDI] Started MIDI watchdog timer");
+}
+
+// Recovery function in case handlers get lost or devices appear after init
 function verifyMIDIHandlers() {
   if (!midiAccess) {
     console.warn("[MIDI] midiAccess not initialized");
     return false;
   }
 
+  let inputCount = midiAccess.inputs.size;
   let allAttached = true;
+  let newDevicesFound = false;
+
   for (let input of midiAccess.inputs.values()) {
     if (!input.onmidimessage) {
-      console.warn(`[MIDI] Handler missing on ${input.name}, re-attaching...`);
+      console.warn(`[MIDI] Handler missing on "${input.name}", re-attaching...`);
       input.onmidimessage = handleMIDIMessage;
       allAttached = false;
+      newDevicesFound = true;
     }
   }
 
-  if (allAttached) {
-    console.log("[MIDI] All handlers verified");
+  if (allAttached && inputCount > 0) {
+    console.log(`[MIDI] All ${inputCount} handler(s) verified`);
   }
 
-  return true;
+  return newDevicesFound;
 }
 
 // --------------------
