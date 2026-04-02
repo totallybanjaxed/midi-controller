@@ -220,28 +220,42 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     const json = JSON.stringify(mappings, null, 2);
 
     try {
-      // Force download with octet-stream MIME type
+      console.log("[MIDI Config] Creating blob with type: application/octet-stream");
       const blob = new Blob([json], { type: "application/octet-stream" });
+      console.log("[MIDI Config] Blob created, size:", blob.size, "bytes");
+
+      console.log("[MIDI Config] Creating object URL...");
       const url = URL.createObjectURL(blob);
+      console.log("[MIDI Config] Object URL created:", url);
+
       const link = document.createElement("a");
+      console.log("[MIDI Config] Created anchor element");
 
       link.href = url;
-      link.download = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
+      const filename = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = filename;
+      console.log("[MIDI Config] Set download attribute to:", filename);
 
-      // Ensure the link is in the DOM before clicking
+      console.log("[MIDI Config] Appending link to document body...");
       document.body.appendChild(link);
-      link.click();
 
-      // Clean up
+      console.log("[MIDI Config] Triggering click...");
+      link.click();
+      console.log("[MIDI Config] Click triggered");
+
+      console.log("[MIDI Config] Scheduling cleanup...");
       setTimeout(() => {
+        console.log("[MIDI Config] Cleaning up - removing link and revoking URL");
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        console.log("[MIDI Config] Cleanup complete");
       }, 100);
 
       console.log("[MIDI Config] Mappings exported successfully");
       ui.notifications.info("MIDI mappings exported");
     } catch (err) {
       console.error("[MIDI Config] Export failed:", err);
+      console.error("[MIDI Config] Error details:", err.message, err.stack);
       ui.notifications.error("Failed to export mappings");
     }
   }
