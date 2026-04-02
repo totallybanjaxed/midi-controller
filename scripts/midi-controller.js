@@ -141,14 +141,48 @@ Hooks.once("ready", async () => {
   console.log("[MIDI] Web MIDI API is available, requesting access...");
 
   try {
-    midiAccess = await navigator.requestMIDIAccess();
-    console.log("[MIDI] MIDI Access granted:", midiAccess);
-    initializeMIDI();
+    // Set a timeout for MIDI access request in case it hangs (e.g., blocked by other modules)
+    const midiPromise = navigator.requestMIDIAccess();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("MIDI access request timed out")), 3000)
+    );
+
+    try {
+      midiAccess = await Promise.race([midiPromise, timeoutPromise]);
+      console.log("[MIDI] MIDI Access granted:", midiAccess);
+      initializeMIDI();
+    } catch (timeoutErr) {
+      console.warn("[MIDI] MIDI access request timed out, will retry on user interaction...");
+      // Retry on next user interaction
+      document.addEventListener("click", retryMIDIAccess, { once: true });
+      document.addEventListener("keydown", retryMIDIAccess, { once: true });
+      document.addEventListener("mousemove", retryMIDIAccess, { once: true });
+    }
   } catch (err) {
     console.error("[MIDI] Failed to request MIDI access:", err);
     ui.notifications.error(`MIDI access failed: ${err.message}`);
   }
 });
+
+// Retry function for MIDI access
+async function retryMIDIAccess() {
+  console.log("[MIDI] Retrying MIDI access after user interaction...");
+  if (midiAccess) {
+    console.log("[MIDI] MIDI already initialized, skipping retry");
+    return;
+  }
+
+  try {
+    console.log("[MIDI] Attempting requestMIDIAccess...");
+    midiAccess = await navigator.requestMIDIAccess();
+    console.log("[MIDI] MIDI Access granted on retry:", midiAccess);
+    initializeMIDI();
+    ui.notifications.info("MIDI controllers connected");
+  } catch (err) {
+    console.error("[MIDI] Retry failed:", err);
+    ui.notifications.warn("Could not connect MIDI controllers");
+  }
+}
 
 // --------------------
 // MIDI SETUP
