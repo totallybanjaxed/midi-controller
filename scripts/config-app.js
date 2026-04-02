@@ -219,19 +219,31 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     const mappings = game.settings.get("midi-controller", "mappings");
     const json = JSON.stringify(mappings, null, 2);
 
-    // Create download link using data URL
-    const dataUrl = "data:application/json;charset=utf-8," + encodeURIComponent(json);
-    const link = document.createElement("a");
-    link.href = dataUrl;
-    link.download = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
-    link.style.display = "none";
+    try {
+      // Force download with octet-stream MIME type
+      const blob = new Blob([json], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      link.href = url;
+      link.download = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
 
-    console.log("[MIDI Config] Mappings exported successfully");
-    ui.notifications.info("MIDI mappings exported");
+      // Ensure the link is in the DOM before clicking
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      console.log("[MIDI Config] Mappings exported successfully");
+      ui.notifications.info("MIDI mappings exported");
+    } catch (err) {
+      console.error("[MIDI Config] Export failed:", err);
+      ui.notifications.error("Failed to export mappings");
+    }
   }
 
   _importMappings() {
