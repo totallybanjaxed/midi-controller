@@ -437,29 +437,52 @@ async function _setVolume(key, target, midiValue) {
     case "environment":
       label = "Environment";
       console.log("[MIDI] Controlling Environment/Ambient sounds");
+      console.log("[MIDI] canvas available?", !!canvas);
+      console.log("[MIDI] canvas.sounds available?", !!canvas?.sounds);
       if (!canvas.sounds) {
         console.warn("[MIDI] canvas.sounds is not available");
         break;
       }
+      console.log("[MIDI] canvas.sounds.placeables:", canvas.sounds.placeables);
+      console.log("[MIDI] canvas.sounds.placeables.length:", canvas.sounds.placeables?.length ?? "undefined");
       let ambientCount = 0;
-      canvas.sounds.placeables.forEach(s => {
-        console.log(`[MIDI] Found ambient sound: ${s.name}, current volume: ${s.document.volume}`);
-        console.log(`[MIDI] Updating with normalized: ${normalized}, volume: ${volume}`);
-        s.document.update({ volume: normalized });
-        ambientCount++;
-      });
+      if (canvas.sounds.placeables && canvas.sounds.placeables.length > 0) {
+        canvas.sounds.placeables.forEach(s => {
+          console.log(`[MIDI] Found ambient sound: ${s.name}, current volume: ${s.document.volume}`);
+          console.log(`[MIDI] Updating with normalized: ${normalized}, volume: ${volume}`);
+          s.document.update({ volume: normalized });
+          ambientCount++;
+        });
+      } else {
+        console.log("[MIDI] No ambient sounds available in canvas.sounds.placeables");
+      }
       console.log(`[MIDI] Updated ${ambientCount} ambient sounds`);
       break;
 
     case "interface":
       label = "Interface";
       console.log("[MIDI] Controlling Interface/UI sounds");
-      console.log(`[MIDI] game.audio.sounds collection:`, game.audio.sounds);
+      console.log("[MIDI] game.audio available?", !!game.audio);
+      console.log("[MIDI] game.audio.sounds available?", !!game.audio?.sounds);
+      console.log("[MIDI] game.audio.sounds:", game.audio.sounds);
+      console.log("[MIDI] game.audio.sounds is iterable?", typeof game.audio.sounds?.[Symbol.iterator] === 'function');
       let interfaceCount = 0;
-      for (const sound of game.audio.sounds) {
-        console.log(`[MIDI] Found UI sound: ${sound.name || sound.src}, current gain: ${sound.gain?.value}`);
-        sound.gain.value = volume;
-        interfaceCount++;
+      if (game.audio.sounds) {
+        try {
+          for (const sound of game.audio.sounds) {
+            console.log(`[MIDI] Found UI sound: ${sound.name || sound.src}, current gain: ${sound.gain?.value}`);
+            if (sound.gain) {
+              sound.gain.value = volume;
+            } else {
+              console.warn("[MIDI] Sound has no gain property");
+            }
+            interfaceCount++;
+          }
+        } catch (err) {
+          console.error("[MIDI] Error iterating interface sounds:", err, err.stack);
+        }
+      } else {
+        console.log("[MIDI] game.audio.sounds is not available");
       }
       console.log(`[MIDI] Updated ${interfaceCount} interface sounds`);
       break;
