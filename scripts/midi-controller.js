@@ -225,22 +225,39 @@ function startMIDIWatchdog() {
   }
 
   let checkCount = 0;
+  let lastInputCount = midiAccess.inputs.size;
+
+  console.log(`[MIDI] Starting watchdog with ${lastInputCount} initial input(s)`);
+
   midiWatchdog = setInterval(() => {
     checkCount++;
-    const hasNewDevices = verifyMIDIHandlers();
+    const currentInputCount = midiAccess.inputs.size;
 
-    // Run frequently for first 60 seconds, then switch to slower polling
-    if (checkCount > 120) {
+    // Log every 5 checks initially
+    if (checkCount % 5 === 0 || currentInputCount > lastInputCount) {
+      console.log(`[MIDI] Watchdog check #${checkCount}: ${currentInputCount} input(s) found`);
+    }
+
+    // If input count changed, we have new devices
+    if (currentInputCount > lastInputCount) {
+      console.log(`[MIDI] New MIDI device(s) detected! (was ${lastInputCount}, now ${currentInputCount})`);
+      lastInputCount = currentInputCount;
+    }
+
+    // Always verify handlers are attached
+    verifyMIDIHandlers();
+
+    // Switch to slower polling after 2 minutes
+    if (checkCount > 240) {
       clearInterval(midiWatchdog);
-      // Switch to slower 2-second polling
+      console.log("[MIDI] Switching to slow polling mode (2 second interval)");
       midiWatchdog = setInterval(() => {
         verifyMIDIHandlers();
       }, 2000);
-      console.log("[MIDI] Switching to slow polling mode");
     }
   }, 500);
 
-  console.log("[MIDI] Started MIDI watchdog timer");
+  console.log("[MIDI] Watchdog started with 500ms check interval");
 }
 
 // Recovery function in case handlers get lost or devices appear after init
@@ -252,22 +269,22 @@ function verifyMIDIHandlers() {
 
   let inputCount = midiAccess.inputs.size;
   let allAttached = true;
-  let newDevicesFound = false;
+  let reattached = 0;
 
   for (let input of midiAccess.inputs.values()) {
     if (!input.onmidimessage) {
       console.warn(`[MIDI] Handler missing on "${input.name}", re-attaching...`);
       input.onmidimessage = handleMIDIMessage;
       allAttached = false;
-      newDevicesFound = true;
+      reattached++;
     }
   }
 
-  if (allAttached && inputCount > 0) {
-    console.log(`[MIDI] All ${inputCount} handler(s) verified`);
+  if (reattached > 0) {
+    console.log(`[MIDI] Re-attached ${reattached} handler(s), total inputs: ${inputCount}`);
   }
 
-  return newDevicesFound;
+  return reattached > 0;
 }
 
 // --------------------
