@@ -54,8 +54,11 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
     // 📍 Event delegation on root element
     html.addEventListener("click", async (e) => {
+      console.log("[MIDI Config] Click event - target:", e.target.id || e.target.className || e.target.tagName);
+
       // 🎯 Learn
       if (e.target.matches(".learn-btn")) {
+        console.log("[MIDI Config] Learn button clicked");
         const row = e.target.closest(".mapping-row");
         const keyInput = row.querySelector(".key");
 
@@ -65,26 +68,31 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
       // ➕ Add
       if (e.target.matches("#add-mapping")) {
+        console.log("[MIDI Config] Add mapping button clicked");
         this._appendRow();
       }
 
       // ❌ Delete
       if (e.target.matches(".delete-btn")) {
+        console.log("[MIDI Config] Delete button clicked");
         e.target.closest(".mapping-row").remove();
       }
 
       // 💾 Save
       if (e.target.matches("#save")) {
+        console.log("[MIDI Config] Save button clicked");
         this._save();
       }
 
       // 📥 Import
       if (e.target.matches("#import-mappings")) {
+        console.log("[MIDI Config] Import button clicked");
         this._importMappings();
       }
 
       // 📤 Export
       if (e.target.matches("#export-mappings")) {
+        console.log("[MIDI Config] Export button clicked");
         this._exportMappings();
       }
     });
