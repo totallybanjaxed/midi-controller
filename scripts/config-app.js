@@ -77,6 +77,16 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
       if (e.target.matches("#save")) {
         this._save();
       }
+
+      // 📥 Import
+      if (e.target.matches("#import-mappings")) {
+        this._importMappings();
+      }
+
+      // 📤 Export
+      if (e.target.matches("#export-mappings")) {
+        this._exportMappings();
+      }
     });
   }
 
@@ -192,5 +202,70 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
     ui.notifications.info("MIDI mappings saved");
     this.close();
+  }
+
+  /* -------------------------------------------- */
+
+  _exportMappings() {
+    const mappings = game.settings.get("midi-controller", "mappings");
+    const json = JSON.stringify(mappings, null, 2);
+
+    // Create and trigger download
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `midi-mappings-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log("[MIDI] Exported mappings to JSON file");
+    ui.notifications.info("MIDI mappings exported");
+  }
+
+  _importMappings() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+
+    input.addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const mappings = JSON.parse(text);
+
+        // Validate structure
+        if (typeof mappings !== "object" || mappings === null) {
+          throw new Error("Invalid mappings format");
+        }
+
+        // Show confirmation
+        const confirmed = await Dialog.confirm({
+          title: "Import MIDI Mappings",
+          content: `<p>This will replace all current mappings with ${Object.keys(mappings).length} imported mappings.</p><p>Continue?</p>`,
+          yes: () => true,
+          no: () => false
+        });
+
+        if (!confirmed) return;
+
+        // Apply mappings
+        await game.settings.set("midi-controller", "mappings", mappings);
+        console.log("[MIDI] Imported mappings from JSON file");
+        ui.notifications.info("MIDI mappings imported successfully");
+
+        // Reload the dialog
+        this.render();
+      } catch (err) {
+        console.error("[MIDI] Import failed:", err);
+        ui.notifications.error(`Failed to import mappings: ${err.message}`);
+      }
+    });
+
+    input.click();
   }
 }
