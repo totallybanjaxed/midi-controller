@@ -12,6 +12,7 @@ export let learnState = {
 
 let midiAccess = null;
 let midiWatchdog = null;
+let windowFocused = true; // Track window focus state
 
 // --------------------
 // Volume overlay
@@ -102,6 +103,18 @@ function getCurrentVolumeEstimate() {
 // --------------------
 Hooks.once("init", () => {
   console.log("[MIDI] Init hook fired");
+
+  // Track window focus for MIDI command filtering
+  window.addEventListener("focus", () => {
+    windowFocused = true;
+    console.log("[MIDI] Window gained focus");
+  });
+
+  window.addEventListener("blur", () => {
+    windowFocused = false;
+    console.log("[MIDI] Window lost focus");
+  });
+
   game.settings.register("midi-controller", "mappings", {
     scope: "client",
     config: false,
@@ -298,7 +311,7 @@ function verifyMIDIHandlers() {
 // --------------------
 async function handleMIDIMessage(event) {
   // 🪟 Only process MIDI in the focused window
-  if (!document.hasFocus()) {
+  if (!windowFocused) {
     console.log("[MIDI] Ignoring input - window not focused");
     return;
   }
