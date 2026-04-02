@@ -297,6 +297,12 @@ function verifyMIDIHandlers() {
 // MIDI HANDLER
 // --------------------
 async function handleMIDIMessage(event) {
+  // 🪟 Only process MIDI in the focused window
+  if (!document.hasFocus()) {
+    console.log("[MIDI] Ignoring input - window not focused");
+    return;
+  }
+
   const [status, data1, data2] = event.data;
   const command = status & 0xf0;
 
