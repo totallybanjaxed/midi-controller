@@ -414,7 +414,7 @@ function handleVolume(key, target, midiValue) {
 async function _setVolume(key, target, midiValue) {
   const normalized = midiValue / 127;
   const volume = AudioHelper.inputToVolume(normalized);
-  console.log("[MIDI] Volume control - target:", target, "normalized:", normalized);
+  console.log("[MIDI] Volume control - target:", target, "normalized:", normalized, "volume:", volume);
 
   let label = "";
 
@@ -422,27 +422,46 @@ async function _setVolume(key, target, midiValue) {
     case "music":
       label = "Music";
       console.log("[MIDI] Controlling Music playlists");
+      let musicCount = 0;
       for (const playlist of game.playlists.contents) {
+        console.log(`[MIDI] Found playlist: ${playlist.name}`);
         for (const s of playlist.sounds) {
+          console.log(`[MIDI] Setting volume on playlist sound: ${s.name}`);
           s.debounceVolume(volume);
+          musicCount++;
         }
       }
+      console.log(`[MIDI] Updated ${musicCount} music sounds`);
       break;
 
     case "environment":
       label = "Environment";
       console.log("[MIDI] Controlling Environment/Ambient sounds");
-      canvas.sounds?.placeables.forEach(s => {
+      if (!canvas.sounds) {
+        console.warn("[MIDI] canvas.sounds is not available");
+        break;
+      }
+      let ambientCount = 0;
+      canvas.sounds.placeables.forEach(s => {
+        console.log(`[MIDI] Found ambient sound: ${s.name}, current volume: ${s.document.volume}`);
+        console.log(`[MIDI] Updating with normalized: ${normalized}, volume: ${volume}`);
         s.document.update({ volume: normalized });
+        ambientCount++;
       });
+      console.log(`[MIDI] Updated ${ambientCount} ambient sounds`);
       break;
 
     case "interface":
       label = "Interface";
       console.log("[MIDI] Controlling Interface/UI sounds");
+      console.log(`[MIDI] game.audio.sounds collection:`, game.audio.sounds);
+      let interfaceCount = 0;
       for (const sound of game.audio.sounds) {
+        console.log(`[MIDI] Found UI sound: ${sound.name || sound.src}, current gain: ${sound.gain?.value}`);
         sound.gain.value = volume;
+        interfaceCount++;
       }
+      console.log(`[MIDI] Updated ${interfaceCount} interface sounds`);
       break;
   }
 
