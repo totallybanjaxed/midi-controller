@@ -37,22 +37,12 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
   /* -------------------------------------------- */
 
-  activateListeners(html) {
-    super.activateListeners(html);
+  _onRender(context, options) {
+    super._onRender(context, options);
 
-    // 🎯 Learn
-    html.querySelectorAll(".learn-btn").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        const row = e.currentTarget.closest(".mapping-row");
-        const keyInput = row.querySelector(".key");
+    const html = this.element;
 
-        const result = await this._learnMidi();
-        keyInput.value = result.key;
-      });
-    });
-
-    // 🔄 Type change
+    // 🎯 Type change - update visibility
     html.querySelectorAll(".type").forEach(select => {
       select.addEventListener("change", (e) => {
         const row = e.currentTarget.closest(".mapping-row");
@@ -62,31 +52,32 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
       this._updateRow(select.closest(".mapping-row"));
     });
 
-    // ➕ Add
-    const addBtn = html.querySelector("#add-mapping");
-    if (addBtn) {
-      addBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        this._appendRow(html);
-      });
-    }
+    // 📍 Event delegation on root element
+    html.addEventListener("click", async (e) => {
+      // 🎯 Learn
+      if (e.target.matches(".learn-btn")) {
+        const row = e.target.closest(".mapping-row");
+        const keyInput = row.querySelector(".key");
 
-    // ❌ Delete
-    html.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.currentTarget.closest(".mapping-row").remove();
-      });
+        const result = await this._learnMidi();
+        keyInput.value = result.key;
+      }
+
+      // ➕ Add
+      if (e.target.matches("#add-mapping")) {
+        this._appendRow();
+      }
+
+      // ❌ Delete
+      if (e.target.matches(".delete-btn")) {
+        e.target.closest(".mapping-row").remove();
+      }
+
+      // 💾 Save
+      if (e.target.matches("#save")) {
+        this._save();
+      }
     });
-
-    // 💾 Save
-    const saveBtn = html.querySelector("#save");
-    if (saveBtn) {
-      saveBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        this._save(html);
-      });
-    }
   }
 
   /* -------------------------------------------- */
@@ -124,8 +115,8 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
   /* -------------------------------------------- */
 
-  _appendRow(html) {
-    const container = html.querySelector("#mappings");
+  _appendRow() {
+    const container = this.element.querySelector("#mappings");
 
     const div = document.createElement("div");
     div.classList.add("mapping-row");
@@ -158,14 +149,19 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
     container.appendChild(div);
 
-    this.activateListeners(html);
+    // Attach type change listener to new row
+    const typeSelect = div.querySelector(".type");
+    typeSelect.addEventListener("change", (e) => {
+      this._updateRow(div);
+    });
+
     this._updateRow(div);
   }
 
   /* -------------------------------------------- */
 
-  async _save(html) {
-    const rows = html.querySelectorAll(".mapping-row");
+  async _save() {
+    const rows = this.element.querySelectorAll(".mapping-row");
     const mappings = {};
 
     rows.forEach(row => {
