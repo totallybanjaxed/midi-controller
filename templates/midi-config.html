@@ -18,9 +18,9 @@
 
         <div class="volume-wrapper {{#if (not (eq this.type "volume"))}}hidden{{/if}}">
           <select class="volume-target">
-            <option value="master" {{#if (eq this.target "master")}}selected{{/if}}>Master</option>
             <option value="music" {{#if (eq this.target "music")}}selected{{/if}}>Music</option>
-            <option value="ambient" {{#if (eq this.target "ambient")}}selected{{/if}}>Ambient</option>
+            <option value="environment" {{#if (eq this.target "environment")}}selected{{/if}}>Environment</option>
+            <option value="interface" {{#if (eq this.target "interface")}}selected{{/if}}>Interface</option>
           </select>
         </div>
 

@@ -155,9 +155,9 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
 
       <div class="volume-wrapper">
         <select class="volume-target">
-          <option value="master">Master</option>
           <option value="music">Music</option>
-          <option value="ambient">Ambient</option>
+          <option value="environment">Environment</option>
+          <option value="interface">Interface</option>
         </select>
       </div>
 

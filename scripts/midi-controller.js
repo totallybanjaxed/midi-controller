@@ -414,20 +414,14 @@ function handleVolume(key, target, midiValue) {
 async function _setVolume(key, target, midiValue) {
   const normalized = midiValue / 127;
   const volume = AudioHelper.inputToVolume(normalized);
-  console.log("Overlay trigger", target, normalized);
-  
+  console.log("[MIDI] Volume control - target:", target, "normalized:", normalized);
+
   let label = "";
 
   switch (target) {
-    case "master":
-      label = "Master";
-      for (const sound of game.audio.sounds) {
-        sound.gain.value = volume;
-      }
-      break;
-
     case "music":
       label = "Music";
+      console.log("[MIDI] Controlling Music playlists");
       for (const playlist of game.playlists.contents) {
         for (const s of playlist.sounds) {
           s.debounceVolume(volume);
@@ -435,11 +429,20 @@ async function _setVolume(key, target, midiValue) {
       }
       break;
 
-    case "ambient":
-      label = "Ambient";
+    case "environment":
+      label = "Environment";
+      console.log("[MIDI] Controlling Environment/Ambient sounds");
       canvas.sounds?.placeables.forEach(s => {
         s.document.update({ volume: normalized });
       });
+      break;
+
+    case "interface":
+      label = "Interface";
+      console.log("[MIDI] Controlling Interface/UI sounds");
+      for (const sound of game.audio.sounds) {
+        sound.gain.value = volume;
+      }
       break;
   }
 
