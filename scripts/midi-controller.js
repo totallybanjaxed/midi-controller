@@ -169,16 +169,18 @@ Hooks.once("ready", async () => {
     try {
       // Set a timeout for MIDI access request in case it hangs (e.g., blocked by other modules)
       const midiPromise = navigator.requestMIDIAccess();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("MIDI access request timed out")), 3000)
-      );
+      const timeoutPromise = new Promise((_, reject) => {
+        const err = new Error("MIDI access request timed out");
+        err.name = "TimeoutError";
+        setTimeout(() => reject(err), 3000);
+      });
 
       try {
         midiAccess = await Promise.race([midiPromise, timeoutPromise]);
         console.log("[MIDI] MIDI Access granted:", midiAccess);
         initializeMIDI();
-      } catch (timeoutErr) {
-        console.warn("[MIDI] MIDI access request timed out, will retry on user interaction...");
+      } catch (accessErr) {
+        reportMIDIAccessFailure(accessErr, "initial request");
         // Retry on next user interaction
         document.addEventListener("click", retryMIDIAccess, { once: true });
         document.addEventListener("keydown", retryMIDIAccess, { once: true });
@@ -206,8 +208,51 @@ async function retryMIDIAccess() {
     initializeMIDI();
     ui.notifications.info("MIDI controllers connected");
   } catch (err) {
-    console.error("[MIDI] Retry failed:", err);
-    ui.notifications.warn("Could not connect MIDI controllers");
+    reportMIDIAccessFailure(err, "retry");
+  }
+}
+
+function reportMIDIAccessFailure(err, phase) {
+  const guidance = getMIDIAccessGuidance(err);
+
+  console.error(`[MIDI] MIDI access failed during ${phase}: ${err.name}: ${err.message}`, err);
+  console.warn(`[MIDI] ${guidance.detail}`);
+  ui.notifications.warn(guidance.notification);
+}
+
+function getMIDIAccessGuidance(err) {
+  if (!window.isSecureContext) {
+    return {
+      notification: "MIDI access blocked: use HTTPS or local Foundry.",
+      detail: "Web MIDI requires a secure browser context. Remote Foundry URLs need HTTPS."
+    };
+  }
+
+  switch (err.name) {
+    case "InvalidStateError":
+      return {
+        notification: "MIDI access failed: browser could not initialize the OS MIDI backend.",
+        detail: "The browser exposes Web MIDI, but the platform MIDI backend failed. Check browser packaging/sandboxing, ALSA MIDI access, or try a non-sandboxed Chromium browser."
+      };
+
+    case "NotAllowedError":
+    case "SecurityError":
+      return {
+        notification: "MIDI access blocked: allow MIDI devices for this site.",
+        detail: "The browser or site permissions denied MIDI access. Check the address-bar site settings and any Permissions-Policy header."
+      };
+
+    case "TimeoutError":
+      return {
+        notification: "MIDI access timed out. Click the page or press a key to retry.",
+        detail: "The browser did not finish initializing MIDI within the startup timeout. A retry will be attempted after user interaction."
+      };
+
+    default:
+      return {
+        notification: `MIDI access failed: ${err.message}`,
+        detail: "requestMIDIAccess failed before the module could enumerate devices. Check browser console details for the original error."
+      };
   }
 }
 
