@@ -10,7 +10,7 @@ export class MidiConfigApp extends foundry.applications.api.HandlebarsApplicatio
     },
     position: {
       width: 650,
-      height: "auto"
+      height: 600
     }
   };
 
